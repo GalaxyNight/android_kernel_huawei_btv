@@ -557,6 +557,9 @@ static ssize_t mtp_read(struct file *fp, char __user *buf,
 	size_t len = 0;
 
 	DBG(cdev, "mtp_read(%zu)\n", count);
+	
+	if (count > dev->bulk_buffer_size)
+		return -EINVAL;
 
 	/* we will block until we're online */
 	DBG(cdev, "mtp_read: waiting for online state\n");
@@ -587,7 +590,7 @@ static ssize_t mtp_read(struct file *fp, char __user *buf,
 requeue_req:
 	/* queue a request */
 	req = dev->rx_req[0];
-	req->length = len;
+	req->length = count;
 	dev->rx_done = 0;
 	ret = usb_ep_queue(dev->ep_out, req, GFP_KERNEL);
 	if (ret < 0) {
